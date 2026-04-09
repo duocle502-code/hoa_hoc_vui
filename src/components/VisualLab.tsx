@@ -799,15 +799,13 @@ export const VisualLab: React.FC<VisualLabProps> = ({ chemicals, isHeating = fal
             );
           })}
 
-          {activeTab === 'chemical' && filteredChemicals.length === 0 && (
+          {filteredChemicals.length === 0 && (
             <div className="flex flex-col items-center justify-center py-8 text-slate-600">
               <Search className="w-8 h-8 mb-2 opacity-30" />
               <span className="text-xs font-medium">Không tìm thấy hóa chất</span>
             </div>
           )}
-          
-          {activeTab === 'chemical' && (
-            </>
+          </>
           )}
 
           {/* =========== CHẾ ĐỘ DỤNG CỤ =========== */}
