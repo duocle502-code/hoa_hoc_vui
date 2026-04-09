@@ -15,6 +15,7 @@ export interface PlacedEquipment {
   x: number;
   y: number;
   rotation?: number;
+  scale?: number;
   // Chemical state
   chemicals: string[];
   color: string;
