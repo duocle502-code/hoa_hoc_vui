@@ -15,6 +15,13 @@ export interface PlacedEquipment {
   x: number;
   y: number;
   rotation?: number;
+  // Chemical state
+  chemicals: string[];
+  color: string;
+  bubbles: boolean;
+  precipitate: boolean;
+  message: string;
+  isReacting: boolean;
 }
 
 export interface Chemical {
