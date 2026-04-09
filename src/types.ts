@@ -1,5 +1,22 @@
 export type ApparatusType = 'beaker' | 'test-tube';
 
+export interface LabEquipment {
+  id: string;
+  name: string;
+  categoryId: string;
+  description: string;
+  width: number;
+  height: number;
+}
+
+export interface PlacedEquipment {
+  id: string; // Unique ID for each instance on the canvas
+  equipmentId: string; // Refers to LabEquipment.id
+  x: number;
+  y: number;
+  rotation?: number;
+}
+
 export interface Chemical {
   id: string;
   name: string;
