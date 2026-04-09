@@ -226,6 +226,51 @@ export const VisualLab: React.FC<VisualLabProps> = ({ chemicals, isHeating = fal
     setPlacedEquipment(prev => prev.map(e => e.id === id ? { ...e, ...updates } : e));
   };
 
+  const loadPreset = (presetId: string) => {
+    setActiveDropper(null);
+    setPlacedEquipment([]);
+    
+    setTimeout(() => {
+      let presetEqs: PlacedEquipment[] = [];
+      let logMsg = '';
+      
+      // Calculate center coordinates
+      const baseX = (labAreaRef.current?.clientWidth || 800) / 2 - 100;
+      const baseY = (labAreaRef.current?.clientHeight || 400) / 2;
+
+      if (presetId === 'H2') {
+        logMsg = 'Đã tải bộ dụng cụ điều chế khí Hidro (Zn + HCl). Thử nhỏ HCl vào bình cầu!';
+        presetEqs = [
+          { id: `iron-stand-${Date.now()}-1`, equipmentId: 'iron-stand', x: baseX - 80, y: baseY - 50, scale: 1, rotation: 0, chemicals: [], color: '#fff', bubbles: false, precipitate: false, message: '', isReacting: false },
+          { id: `round-flask-${Date.now()}-2`, equipmentId: 'round-flask', x: baseX - 45, y: baseY - 10, scale: 0.9, rotation: 0, chemicals: ['zn'], color: '#94a3b8', bubbles: false, precipitate: false, message: '', isReacting: false },
+          { id: `separatory-funnel-${Date.now()}-3`, equipmentId: 'separatory-funnel', x: baseX - 45, y: baseY - 120, scale: 0.8, rotation: 0, chemicals: [], color: '#fff', bubbles: false, precipitate: false, message: 'Nhỏ HCl vào đây', isReacting: false },
+          { id: `delivery-tube-z-${Date.now()}-4`, equipmentId: 'delivery-tube-z', x: baseX - 10, y: baseY - 40, scale: 1.2, rotation: 10, chemicals: [], color: '#fff', bubbles: false, precipitate: false, message: '', isReacting: false },
+          { id: `trough-${Date.now()}-5`, equipmentId: 'trough', x: baseX + 80, y: baseY + 30, scale: 1.2, rotation: 0, chemicals: ['h2o'], color: '#38bdf8', bubbles: false, precipitate: false, message: '', isReacting: false },
+          { id: `test-tube-${Date.now()}-6`, equipmentId: 'test-tube', x: baseX + 130, y: baseY - 20, scale: 1, rotation: 180, chemicals: [], color: '#fff', bubbles: true, precipitate: false, message: 'Thu khí dời nước', isReacting: false },
+        ];
+      } else if (presetId === 'O2') {
+        logMsg = 'Đã tải bộ dụng cụ nhiệt phân (KMnO4). Hãy bật đèn cồn ở dưới!';
+        presetEqs = [
+          { id: `iron-stand-${Date.now()}-1`, equipmentId: 'iron-stand', x: baseX - 110, y: baseY - 30, scale: 1, rotation: 0, chemicals: [], color: '#fff', bubbles: false, precipitate: false, message: '', isReacting: false },
+          { id: `test-tube-${Date.now()}-2`, equipmentId: 'test-tube', x: baseX - 50, y: baseY - 50, scale: 1.2, rotation: 65, chemicals: ['kmno4'], color: '#a21caf', bubbles: false, precipitate: false, message: '', isReacting: false },
+          { id: `delivery-tube-z-${Date.now()}-4`, equipmentId: 'delivery-tube-z', x: baseX - 5, y: baseY, scale: 1.2, rotation: -10, chemicals: [], color: '#fff', bubbles: false, precipitate: false, message: '', isReacting: false },
+          { id: `trough-${Date.now()}-5`, equipmentId: 'trough', x: baseX + 80, y: baseY + 50, scale: 1.2, rotation: 0, chemicals: ['h2o'], color: '#38bdf8', bubbles: false, precipitate: false, message: '', isReacting: false },
+          { id: `test-tube-${Date.now()}-6`, equipmentId: 'test-tube', x: baseX + 130, y: baseY + 10, scale: 1, rotation: 180, chemicals: [], color: '#fff', bubbles: true, precipitate: false, message: 'Thu khí O2', isReacting: false },
+        ];
+      } else if (presetId === 'CO2') {
+        logMsg = 'Đã tải bộ sục khí CO2. Nhỏ HCl vào Erlenmeyer (Bình tam giác)!';
+        presetEqs = [
+          { id: `erlenmeyer-${Date.now()}-1`, equipmentId: 'erlenmeyer', x: baseX - 50, y: baseY + 30, scale: 1, rotation: 0, chemicals: ['na2co3'], color: '#f8fafc', bubbles: false, precipitate: false, message: '', isReacting: false },
+          { id: `delivery-tube-l-${Date.now()}-2`, equipmentId: 'delivery-tube-l', x: baseX - 20, y: baseY - 5, scale: 1.3, rotation: 35, chemicals: [], color: '#fff', bubbles: false, precipitate: false, message: '', isReacting: false },
+          { id: `beaker-${Date.now()}-3`, equipmentId: 'beaker', x: baseX + 60, y: baseY + 50, scale: 0.9, rotation: 0, chemicals: ['caoh2'], color: '#ffffff', bubbles: false, precipitate: false, message: 'Nước vôi trong', isReacting: false },
+        ];
+      }
+
+      setPlacedEquipment(presetEqs);
+      setReactionLog(prev => [`[${new Date().toLocaleTimeString()}] ${logMsg}`, ...prev]);
+    }, 50);
+  };
+
   const activeChem = chemicals.find(c => c.id === activeDropper);
   const categories = Object.keys(groupedChemicals);
 
@@ -234,22 +279,45 @@ export const VisualLab: React.FC<VisualLabProps> = ({ chemicals, isHeating = fal
       {/* ===== BÊN TRÁI: Khu vực thí nghiệm ===== */}
       <div className="flex-1 flex flex-col gap-4 min-w-0">
         {/* Status Bar */}
-        <div className="glass-card px-5 py-2.5 rounded-2xl flex items-center gap-3 text-cyan-300 font-medium shrink-0">
-          <Info className="w-5 h-5 shrink-0 text-cyan-500" />
-          {activeDropper ? (
-            <span className="text-sm">
-              Đang cầm <strong className="text-cyan-200">{activeChem?.name} ({activeChem?.formula})</strong>
-              <span className="text-cyan-400/70 ml-1">— Nhấp vào ống nghiệm để nhỏ vào.</span>
-              <button
-                onClick={() => setActiveDropper(null)}
-                className="ml-3 inline-flex items-center gap-1 px-2 py-0.5 bg-cyan-500/20 hover:bg-cyan-500/30 rounded-lg text-xs font-bold text-cyan-300 transition-colors border border-cyan-500/30"
-              >
-                <X className="w-3 h-3" /> Bỏ
-              </button>
-            </span>
-          ) : (
-            <span className="text-sm text-slate-400">Chọn hóa chất từ danh sách bên phải để bắt đầu thí nghiệm.</span>
-          )}
+        <div className="glass-card px-5 py-2.5 rounded-2xl flex items-center justify-between gap-3 shrink-0">
+          <div className="flex items-center gap-3 text-cyan-300 font-medium">
+            <Info className="w-5 h-5 shrink-0 text-cyan-500" />
+            {activeDropper ? (
+              <span className="text-sm">
+                Đang cầm <strong className="text-cyan-200">{activeChem?.name} ({activeChem?.formula})</strong>
+                <span className="text-cyan-400/70 ml-1">— Nhấp vào ống nghiệm để nhỏ vào.</span>
+                <button
+                  onClick={() => setActiveDropper(null)}
+                  className="ml-3 inline-flex items-center gap-1 px-2 py-0.5 bg-cyan-500/20 hover:bg-cyan-500/30 rounded-lg text-xs font-bold text-cyan-300 transition-colors border border-cyan-500/30"
+                >
+                  <X className="w-3 h-3" /> Bỏ
+                </button>
+              </span>
+            ) : (
+              <span className="text-sm text-slate-400">Chọn hóa chất từ danh sách bên phải để bắt đầu thí nghiệm.</span>
+            )}
+          </div>
+
+          {/* Menu Dropdown - Presets */}
+          <div className="relative group">
+            <button className="flex items-center gap-2 px-3 py-1.5 bg-violet-500/10 hover:bg-violet-500/20 border border-violet-500/30 rounded-xl text-violet-300 text-xs font-bold transition-colors">
+              <Sparkles className="w-4 h-4" />
+              Mẫu Thí Nghiệm
+              <ChevronDown className="w-3 h-3 ml-1 opacity-70" />
+            </button>
+            <div className="absolute top-full right-0 mt-2 w-64 bg-slate-800/95 backdrop-blur-md border border-slate-700/50 rounded-xl shadow-xl p-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
+               <div className="px-3 py-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-700/50 mb-1">Thiết lập tự động</div>
+               <button onClick={() => loadPreset('H2')} className="w-full flex items-center gap-2 px-3 py-2.5 hover:bg-slate-700/50 rounded-lg text-left text-sm text-slate-300 hover:text-cyan-300 transition-colors">
+                 <span className="text-lg">🎈</span> Điều chế H2 (Kẽm + HCl)
+               </button>
+               <button onClick={() => loadPreset('O2')} className="w-full flex items-center gap-2 px-3 py-2.5 hover:bg-slate-700/50 rounded-lg text-left text-sm text-slate-300 hover:text-cyan-300 transition-colors">
+                 <span className="text-lg">🔥</span> Điều chế O2 (Nhiệt phân thuốc tím)
+               </button>
+               <button onClick={() => loadPreset('CO2')} className="w-full flex items-center gap-2 px-3 py-2.5 hover:bg-slate-700/50 rounded-lg text-left text-sm text-slate-300 hover:text-cyan-300 transition-colors">
+                 <span className="text-lg">💨</span> Sục CO2 (Muối Carbonate + HCl)
+               </button>
+            </div>
+          </div>
         </div>
 
         {/* Khu vực ống nghiệm */}
