@@ -1,0 +1,5 @@
+{
+  "name": "ChemAR - Phòng Thí Nghiệm Hóa Học Ảo",
+  "description": "Ứng dụng AR tương tác trực tiếp với dụng cụ và hóa chất ảo, thực hiện thí nghiệm hóa học an toàn và trực quan.",
+  "requestFramePermissions": ["camera"]
+}
