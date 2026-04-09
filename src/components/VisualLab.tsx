@@ -1,9 +1,12 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
-import { Beaker, FlaskConical, Info, RotateCcw, Zap, Loader2, Pipette, Search, AlertTriangle, Flame, Droplets, X, Sparkles, ClipboardList, Atom, ChevronDown, ChevronUp } from 'lucide-react';
+import { Beaker, FlaskConical, Info, RotateCcw, Zap, Loader2, Pipette, Search, AlertTriangle, Flame, Droplets, X, Sparkles, ClipboardList, Atom, ChevronDown, ChevronUp, Wrench, Trash2 } from 'lucide-react';
 import { predictReaction, LabProblemResult } from '../services/geminiService';
 import Swal from 'sweetalert2';
+import { PlacedEquipment, LabEquipment } from '../types';
+import { LAB_EQUIPMENT, EQUIPMENT_CATEGORIES } from '../data/equipmentData';
+import { EquipmentSVG } from './EquipmentSVGs';
 
 interface TestTubeData {
   id: number;
@@ -65,6 +68,11 @@ export const VisualLab: React.FC<VisualLabProps> = ({ chemicals, isHeating = fal
   const [searchQuery, setSearchQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [showProblemDetails, setShowProblemDetails] = useState(true);
+
+  // Equipment states
+  const [activeTab, setActiveTab] = useState<'chemical' | 'equipment'>('chemical');
+  const [placedEquipment, setPlacedEquipment] = useState<PlacedEquipment[]>([]);
+  const labAreaRef = useRef<HTMLDivElement>(null);
 
   // Nhóm hóa chất theo danh mục
   const groupedChemicals = useMemo(() => {
@@ -198,6 +206,24 @@ export const VisualLab: React.FC<VisualLabProps> = ({ chemicals, isHeating = fal
     })));
     setActiveDropper(null);
     setReactionLog([]);
+    setPlacedEquipment([]);
+  };
+
+  const addEquipment = (equipmentId: string) => {
+    // Add new equipment to the center of the lab area
+    const newEquipment: PlacedEquipment = {
+      id: `${equipmentId}-${Date.now()}`,
+      equipmentId: equipmentId,
+      x: 100 + Math.random() * 50, // Slight random offset
+      y: 100 + Math.random() * 50,
+      rotation: 0
+    };
+    setPlacedEquipment(prev => [...prev, newEquipment]);
+    setReactionLog(prev => [`[${new Date().toLocaleTimeString()}] Đã thêm ${LAB_EQUIPMENT.find(e => e.id === equipmentId)?.name} vào phòng lab.`, ...prev]);
+  };
+
+  const removeEquipment = (id: string) => {
+    setPlacedEquipment(prev => prev.filter(e => e.id !== id));
   };
 
   const activeChem = chemicals.find(c => c.id === activeDropper);
@@ -239,7 +265,39 @@ export const VisualLab: React.FC<VisualLabProps> = ({ chemicals, isHeating = fal
           <div className="absolute top-0 left-1/4 w-64 h-64 bg-violet-500/5 rounded-full blur-[80px] pointer-events-none" />
           <div className="absolute bottom-0 right-1/4 w-48 h-48 bg-cyan-500/5 rounded-full blur-[60px] pointer-events-none" />
 
-          {/* Alcohol Lamp */}
+          {/* Draggable Equipment Layer */}
+          <div className="absolute inset-0 z-20 pointer-events-none overflow-hidden" ref={labAreaRef}>
+             {placedEquipment.map(item => {
+               const eqDef = LAB_EQUIPMENT.find(e => e.id === item.equipmentId);
+               if (!eqDef) return null;
+
+               return (
+                 <motion.div
+                   key={item.id}
+                   drag
+                   dragConstraints={labAreaRef}
+                   dragElastic={0}
+                   dragMomentum={false}
+                   initial={{ x: item.x, y: item.y, scale: 0 }}
+                   animate={{ scale: 1 }}
+                   className="absolute origin-center pointer-events-auto group cursor-grab active:cursor-grabbing"
+                   style={{ width: eqDef.width, height: eqDef.height }}
+                 >
+                   <EquipmentSVG id={eqDef.id} width={eqDef.width} height={eqDef.height} />
+                   
+                   {/* Delete button (shows on hover) */}
+                   <button
+                     onClick={(e) => { e.stopPropagation(); removeEquipment(item.id); }}
+                     className="absolute -top-3 -right-3 w-6 h-6 bg-red-500/90 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-lg z-30"
+                   >
+                     <Trash2 className="w-3 h-3" />
+                   </button>
+                 </motion.div>
+               );
+             })}
+          </div>
+
+          {/* Alcohol Lamp (Legacy context) */}
           <div className="absolute -bottom-20 left-1/2 -translate-x-1/2 flex flex-col items-center z-10">
             <div className="relative cursor-pointer group" onClick={onHeatingToggle}>
               <AnimatePresence>
@@ -411,21 +469,34 @@ export const VisualLab: React.FC<VisualLabProps> = ({ chemicals, isHeating = fal
         </div>
       </div>
 
-      {/* ===== BÊN PHẢI: Danh sách hóa chất ===== */}
+      {/* ===== BÊN PHẢI: Panel ===== */}
       <div className="w-80 shrink-0 flex flex-col glass-panel rounded-3xl overflow-hidden">
-        {/* Header */}
-        <div className="p-4 border-b border-slate-700/30 shrink-0">
-          <div className="flex items-center gap-2 mb-3">
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-violet-600 to-cyan-500 flex items-center justify-center text-white shadow-lg neon-glow">
-              <Droplets className="w-4 h-4" />
-            </div>
-            <div>
-              <h3 className="font-bold text-sm text-slate-100">Kệ Hóa Chất</h3>
-              <p className="text-[10px] text-slate-500">{chemicals.length} loại hóa chất</p>
-            </div>
-          </div>
+        {/* Header Tabs */}
+        <div className="flex border-b border-slate-700/30">
+          <button
+            onClick={() => setActiveTab('chemical')}
+            className={cn(
+              "flex-1 py-3 text-sm font-bold flex items-center justify-center gap-2 transition-colors",
+              activeTab === 'chemical' ? "bg-slate-800/80 text-violet-400 border-b-2 border-violet-500" : "text-slate-500 hover:text-slate-300 hover:bg-slate-800/40"
+            )}
+          >
+            <Droplets className="w-4 h-4" />
+            Hóa Chất
+          </button>
+          <button
+            onClick={() => setActiveTab('equipment')}
+            className={cn(
+              "flex-1 py-3 text-sm font-bold flex items-center justify-center gap-2 transition-colors",
+              activeTab === 'equipment' ? "bg-slate-800/80 text-cyan-400 border-b-2 border-cyan-500" : "text-slate-500 hover:text-slate-300 hover:bg-slate-800/40"
+            )}
+          >
+            <Wrench className="w-4 h-4" />
+            Dụng Cụ
+          </button>
+        </div>
 
-          {/* Tìm kiếm */}
+        {/* Tab Header Info & Search */}
+        <div className="p-4 border-b border-slate-700/30 shrink-0">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-500" />
             <input
@@ -437,43 +508,49 @@ export const VisualLab: React.FC<VisualLabProps> = ({ chemicals, isHeating = fal
             />
           </div>
 
-          {/* Bộ lọc danh mục */}
-          <div className="flex flex-wrap gap-1.5 mt-3">
-            <button
-              onClick={() => setActiveCategory(null)}
-              className={cn(
-                "px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all",
-                !activeCategory
-                  ? "bg-gradient-to-r from-violet-600 to-cyan-600 text-white shadow-sm"
-                  : "bg-slate-800/60 text-slate-500 hover:bg-slate-700/60 hover:text-slate-300 border border-slate-700/30"
-              )}
-            >
-              Tất cả
-            </button>
-            {categories.map(cat => {
-              const colors = categoryColors[cat] || categoryColors['Khác'];
-              return (
-                <button
-                  key={cat}
-                  onClick={() => setActiveCategory(activeCategory === cat ? null : cat)}
-                  className={cn(
-                    "px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all flex items-center gap-1",
-                    activeCategory === cat
-                      ? `${colors.bg} ${colors.text} border ${colors.border}`
-                      : "bg-slate-800/60 text-slate-500 hover:bg-slate-700/60 hover:text-slate-300 border border-slate-700/30"
-                  )}
-                >
-                  <span className={cn("w-1.5 h-1.5 rounded-full", colors.dot)} />
-                  {cat}
-                </button>
-              );
-            })}
-          </div>
+          {/* Bộ lọc danh mục (Chỉ hiện cho Hóa chất) */}
+          {activeTab === 'chemical' && (
+            <div className="flex flex-wrap gap-1.5 mt-3">
+              <button
+                onClick={() => setActiveCategory(null)}
+                className={cn(
+                  "px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all",
+                  !activeCategory
+                    ? "bg-gradient-to-r from-violet-600 to-cyan-600 text-white shadow-sm"
+                    : "bg-slate-800/60 text-slate-500 hover:bg-slate-700/60 hover:text-slate-300 border border-slate-700/30"
+                )}
+              >
+                Tất cả
+              </button>
+              {categories.map(cat => {
+                const colors = categoryColors[cat] || categoryColors['Khác'];
+                return (
+                  <button
+                    key={cat}
+                    onClick={() => setActiveCategory(activeCategory === cat ? null : cat)}
+                    className={cn(
+                      "px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all flex items-center gap-1",
+                      activeCategory === cat
+                        ? `${colors.bg} ${colors.text} border ${colors.border}`
+                        : "bg-slate-800/60 text-slate-500 hover:bg-slate-700/60 hover:text-slate-300 border border-slate-700/30"
+                    )}
+                  >
+                    <span className={cn("w-1.5 h-1.5 rounded-full", colors.dot)} />
+                    {cat}
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
 
-        {/* Danh sách hóa chất - có thể cuộn */}
+        {/* Danh sách - có thể cuộn */}
         <div className="flex-1 overflow-y-auto p-3 space-y-4">
-          {/* ===== GIÁ HOÁ CHẤT ĐỀ BÀI ===== */}
+          
+          {/* =========== CHẾ ĐỘ HÓA CHẤT =========== */}
+          {activeTab === 'chemical' && (
+            <>
+              {/* ===== GIÁ HOÁ CHẤT ĐỀ BÀI ===== */}
           {problemResult && problemResult.chemicals.length > 0 && (
             <motion.div
               initial={{ opacity: 0, y: -10 }}
@@ -722,12 +799,65 @@ export const VisualLab: React.FC<VisualLabProps> = ({ chemicals, isHeating = fal
             );
           })}
 
-          {filteredChemicals.length === 0 && (
+          {activeTab === 'chemical' && filteredChemicals.length === 0 && (
             <div className="flex flex-col items-center justify-center py-8 text-slate-600">
               <Search className="w-8 h-8 mb-2 opacity-30" />
               <span className="text-xs font-medium">Không tìm thấy hóa chất</span>
             </div>
           )}
+          
+          {activeTab === 'chemical' && (
+            </>
+          )}
+
+          {/* =========== CHẾ ĐỘ DỤNG CỤ =========== */}
+          {activeTab === 'equipment' && (
+            <div className="space-y-4">
+              {EQUIPMENT_CATEGORIES.map(category => {
+                const categoryEquipments = LAB_EQUIPMENT.filter(eq => 
+                  eq.categoryId === category.id && 
+                  (searchQuery === '' || eq.name.toLowerCase().includes(searchQuery.toLowerCase()))
+                );
+
+                if (categoryEquipments.length === 0) return null;
+
+                return (
+                  <div key={category.id}>
+                    <div className="flex items-center gap-2 mb-2 px-1 text-cyan-400">
+                      <Wrench className="w-3 h-3" />
+                      <span className="text-[10px] font-bold uppercase tracking-wider">{category.name}</span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                       {categoryEquipments.map(eq => (
+                         <motion.button
+                           key={eq.id}
+                           whileHover={{ scale: 1.02 }}
+                           whileTap={{ scale: 0.95 }}
+                           onClick={() => addEquipment(eq.id)}
+                           className="flex flex-col items-center justify-center p-3 rounded-xl bg-slate-800/50 border border-slate-700/50 hover:border-cyan-500/30 hover:bg-slate-800/80 transition-colors group"
+                         >
+                           <div className="h-12 flex items-center justify-center mb-2 opacity-80 group-hover:opacity-100 transition-opacity drop-shadow-lg">
+                             <EquipmentSVG id={eq.id} width={30} height={30} />
+                           </div>
+                           <span className="text-[10px] font-bold text-slate-300 text-center leading-tight">
+                             {eq.name}
+                           </span>
+                         </motion.button>
+                       ))}
+                    </div>
+                  </div>
+                );
+              })}
+              
+              {LAB_EQUIPMENT.filter(eq => eq.name.toLowerCase().includes(searchQuery.toLowerCase())).length === 0 && (
+                <div className="flex flex-col items-center justify-center py-8 text-slate-600">
+                  <Search className="w-8 h-8 mb-2 opacity-30" />
+                  <span className="text-xs font-medium">Không tìm thấy dụng cụ</span>
+                </div>
+              )}
+            </div>
+          )}
+
         </div>
 
         {/* Thông tin đang cầm */}
