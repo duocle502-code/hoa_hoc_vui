@@ -12,11 +12,26 @@ interface EquipmentSVGProps {
   className?: string;
   fillLevel?: number; // 0 to 1
   liquidColor?: string;
+  bubbles?: boolean;
 }
 
 export const EquipmentSVG: React.FC<EquipmentSVGProps> = ({ 
-  id, width = 60, height = 60, className = '', fillLevel = 0, liquidColor = LiquidColor 
+  id, width = 60, height = 60, className = '', fillLevel = 0, liquidColor = LiquidColor, bubbles = false 
 }) => {
+  const renderBubbles = (x: number, y: number, w: number, h: number) => {
+    if (!bubbles || fillLevel === 0) return null;
+    return (
+      <g>
+        {[...Array(6)].map((_, i) => (
+          <circle key={i} cx={x + Math.random() * w} cy={y + Math.random() * h} r={Math.random() * 2 + 1} fill="white" opacity="0.6">
+            <animate attributeName="cy" values={`${y + h};${y - 10};${y - 10}`} keyTimes="0;0.8;1" dur={`${1 + Math.random()}s`} repeatCount="indefinite" begin={`${Math.random()}s`} />
+            <animate attributeName="opacity" values="0;0.8;0" keyTimes="0;0.5;1" dur={`${1 + Math.random()}s`} repeatCount="indefinite" begin={`${Math.random()}s`} />
+          </circle>
+        ))}
+      </g>
+    );
+  };
+
   const getSVG = () => {
     switch (id) {
       case 'alcohol-lamp':
@@ -75,7 +90,10 @@ export const EquipmentSVG: React.FC<EquipmentSVGProps> = ({
             <rect x="32" y="2" width="16" height="5" fill={GlassFill} stroke={GlassStroke} strokeWidth="2" rx="1" />
             <path d="M40 98 C30 98, 20 95, 15 85 C11 75, 11 65, 15 55" fill="none" stroke="rgba(255,255,255,0.8)" strokeWidth="2" strokeLinecap="round" /> {/* Highlight */}
             {fillLevel > 0 && (
-              <path d={`M10 75 C10 90, 25 98, 40 98 C55 98, 70 90, 70 75 L10 75 Z`} fill={liquidColor} /> // Simplified fill
+              <g>
+                <path d={`M10 ${95 - fillLevel * 40} C10 90, 25 98, 40 98 C55 98, 70 90, 70 ${95 - fillLevel * 40} Z`} fill={liquidColor} />
+                {renderBubbles(20, 95 - fillLevel * 40, 40, fillLevel * 40)}
+              </g>
             )}
           </svg>
         );
@@ -85,6 +103,12 @@ export const EquipmentSVG: React.FC<EquipmentSVGProps> = ({
           <svg viewBox="0 0 80 100" className={className} width={width} height={height}>
             <path d="M35 5 L35 40 C20 50, 10 65, 10 85 C10 95, 20 98, 40 98 C60 98, 70 95, 70 85 C70 65, 60 50, 45 40 L45 5" fill={GlassFill} stroke={GlassStroke} strokeWidth="2" />
             <rect x="32" y="2" width="16" height="5" fill={GlassFill} stroke={GlassStroke} strokeWidth="2" rx="1" />
+            {fillLevel > 0 && (
+              <g>
+                <path d={`M10 ${95 - fillLevel * 40} C10 85, 20 98, 40 98 C60 98, 70 85, 70 ${95 - fillLevel * 40} Z`} fill={liquidColor} />
+                {renderBubbles(20, 95 - fillLevel * 40, 40, fillLevel * 40)}
+              </g>
+            )}
             <path d="M20 98 L60 98" stroke={GlassStroke} strokeWidth="2" /> {/* Flat bottom line */}
           </svg>
         );
@@ -93,6 +117,12 @@ export const EquipmentSVG: React.FC<EquipmentSVGProps> = ({
         return (
           <svg viewBox="0 0 80 100" className={className} width={width} height={height}>
             <path d="M35 5 L35 25 L10 90 C8 95, 12 98, 20 98 L60 98 C68 98, 72 95, 70 90 L45 25 L45 5" fill={GlassFill} stroke={GlassStroke} strokeWidth="2" strokeLinejoin="round" />
+            {fillLevel > 0 && (
+              <g>
+                <path d={`M${10 + (1-fillLevel)*25} ${95 - fillLevel * 40} C8 95, 12 98, 20 98 L60 98 C68 98, 72 95, ${70 - (1-fillLevel)*25} ${95 - fillLevel * 40} Z`} fill={liquidColor} />
+                {renderBubbles(20, 95 - fillLevel * 40, 40, fillLevel * 40)}
+              </g>
+            )}
             <rect x="32" y="2" width="16" height="5" fill={GlassFill} stroke={GlassStroke} strokeWidth="2" rx="1" />
             {/* Volume Marks */}
             <path d="M18 70 L23 70 M25 50 L30 50 M32 35 L35 35" stroke={GlassStroke} strokeWidth="1" />
@@ -104,6 +134,12 @@ export const EquipmentSVG: React.FC<EquipmentSVGProps> = ({
           <svg viewBox="0 0 70 90" className={className} width={width} height={height}>
             <path d="M15 5 L15 80 C15 85, 20 88, 35 88 C50 88, 55 85, 55 80 L55 5 M15 5 L10 5" fill={GlassFill} stroke={GlassStroke} strokeWidth="2" />
             <ellipse cx="35" cy="5" rx="20" ry="2" fill="none" stroke={GlassStroke} strokeWidth="2" /> {/* Top rim */}
+            {fillLevel > 0 && (
+              <g>
+                <path d={`M15 ${85 - fillLevel * 60} C15 85, 20 88, 35 88 C50 88, 55 85, 55 ${85 - fillLevel * 60} Z`} fill={liquidColor} />
+                {renderBubbles(15, 85 - fillLevel * 60, 40, fillLevel * 60)}
+              </g>
+            )}
             {/* Spout */}
             <path d="M10 5 C5 5, 10 15, 15 15" stroke={GlassStroke} strokeWidth="2" fill="none" />
             {/* Level marks */}
@@ -115,6 +151,12 @@ export const EquipmentSVG: React.FC<EquipmentSVGProps> = ({
         return (
           <svg viewBox="0 0 25 120" className={className} width={width} height={height}>
             <path d="M5 2 L5 110 C5 116, 20 116, 20 110 L20 2" fill={GlassFill} stroke={GlassStroke} strokeWidth="2" />
+            {fillLevel > 0 && (
+              <g>
+                <path d={`M5 ${115 - fillLevel * 80} C5 116, 20 116, 20 ${115 - fillLevel * 80} Z`} fill={liquidColor} />
+                {renderBubbles(5, 115 - fillLevel * 80, 15, fillLevel * 80)}
+              </g>
+            )}
             <ellipse cx="12.5" cy="2" rx="8" ry="1.5" fill="none" stroke={GlassStroke} strokeWidth="2" />
           </svg>
         );
@@ -123,6 +165,12 @@ export const EquipmentSVG: React.FC<EquipmentSVGProps> = ({
         return (
           <svg viewBox="0 0 25 130" className={className} width={width} height={height}>
             <path d="M5 12 L5 120 C5 126, 20 126, 20 120 L20 12" fill={GlassFill} stroke={GlassStroke} strokeWidth="2" />
+            {fillLevel > 0 && (
+              <g>
+                <path d={`M5 ${125 - fillLevel * 80} C5 126, 20 126, 20 ${125 - fillLevel * 80} Z`} fill={liquidColor} />
+                {renderBubbles(5, 125 - fillLevel * 80, 15, fillLevel * 80)}
+              </g>
+            )}
             <ellipse cx="12.5" cy="12" rx="8" ry="1.5" fill="none" stroke={GlassStroke} strokeWidth="2" />
             <path d="M6 1 L19 1 L17 14 L8 14 Z" fill="#94a3b8" stroke="#64748b" strokeWidth="1" /> {/* Stopper */}
           </svg>
@@ -175,6 +223,12 @@ export const EquipmentSVG: React.FC<EquipmentSVGProps> = ({
             <rect x="18" y="3" width="14" height="4" fill="#94a3b8" /> {/* Stopper */}
             {/* Body */}
             <path d="M20 20 C5 25, 5 60, 25 75 C45 60, 45 25, 30 20Z" fill={GlassFill} stroke={GlassStroke} strokeWidth="2" />
+            {fillLevel > 0 && (
+              <g>
+                <path d={`M${20 - fillLevel*10} ${70 - fillLevel * 45} C5 ${75 - fillLevel*30}, 5 60, 25 75 C45 60, 45 ${75 - fillLevel*30}, ${30 + fillLevel*10} ${70 - fillLevel * 45}Z`} fill={liquidColor} />
+                {renderBubbles(10, 70 - fillLevel * 45, 30, fillLevel * 45)}
+              </g>
+            )}
             {/* Stem */}
             <rect x="23" y="75" width="4" height="40" fill={GlassFill} stroke={GlassStroke} strokeWidth="2" />
             {/* Stopcock */}
@@ -189,6 +243,12 @@ export const EquipmentSVG: React.FC<EquipmentSVGProps> = ({
             <ellipse cx="70" cy="20" rx="60" ry="6" fill="none" stroke={GlassStroke} strokeWidth="2" />
             {/* Water level */}
             <path d="M18 45 L122 45 C118 65, 115 75, 70 75 C25 75, 22 65, 18 45 Z" fill="rgba(56, 189, 248, 0.4)" />
+            {fillLevel > 0 && (
+              <g>
+                <path d={`M${20 - fillLevel*5} ${70 - fillLevel * 25} L${120 + fillLevel*5} ${70 - fillLevel * 25} C118 65, 115 75, 70 75 C25 75, 22 65, ${20 - fillLevel*5} ${70 - fillLevel * 25} Z`} fill={liquidColor} opacity="0.8" />
+                {renderBubbles(20, 70 - fillLevel * 25, 100, fillLevel * 25)}
+              </g>
+            )}
           </svg>
         );
 
