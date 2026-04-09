@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
-import { Beaker, FlaskConical, Info, RotateCcw, Zap, Loader2, Pipette, Search, AlertTriangle, Flame, Droplets, X, Sparkles, ClipboardList, Atom, ChevronDown, ChevronUp, Wrench, Trash2 } from 'lucide-react';
+import { Beaker, FlaskConical, Info, RotateCcw, Zap, Loader2, Pipette, Search, AlertTriangle, Flame, Droplets, X, Sparkles, ClipboardList, Atom, ChevronDown, ChevronUp, Wrench, Trash2, ZoomIn, ZoomOut, RotateCw } from 'lucide-react';
 import { predictReaction, LabProblemResult } from '../services/geminiService';
 import Swal from 'sweetalert2';
 import { PlacedEquipment, LabEquipment } from '../types';
@@ -222,6 +222,10 @@ export const VisualLab: React.FC<VisualLabProps> = ({ chemicals, isHeating = fal
     setPlacedEquipment(prev => prev.filter(e => e.id !== id));
   };
 
+  const updateEquipment = (id: string, updates: Partial<PlacedEquipment>) => {
+    setPlacedEquipment(prev => prev.map(e => e.id === id ? { ...e, ...updates } : e));
+  };
+
   const activeChem = chemicals.find(c => c.id === activeDropper);
   const categories = Object.keys(groupedChemicals);
 
@@ -275,7 +279,7 @@ export const VisualLab: React.FC<VisualLabProps> = ({ chemicals, isHeating = fal
                    dragElastic={0}
                    dragMomentum={false}
                    initial={{ x: item.x, y: item.y, scale: 0 }}
-                   animate={{ scale: 1 }}
+                   animate={{ scale: item.scale || 1, rotate: item.rotation || 0 }}
                    onClick={() => dropIntoEquipment(item.id)}
                    className={cn(
                      "absolute origin-center pointer-events-auto group cursor-grab active:cursor-grabbing",
@@ -336,6 +340,23 @@ export const VisualLab: React.FC<VisualLabProps> = ({ chemicals, isHeating = fal
                        <RotateCcw className="w-3 h-3" />
                      </button>
                    )}
+
+                   {/* Size & Rotate Controls (bottom) */}
+                   <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-1 bg-slate-800/90 border border-slate-600/50 p-1 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-auto">
+                     <button onClick={(e) => { e.stopPropagation(); updateEquipment(item.id, { scale: Math.max(0.5, (item.scale || 1) - 0.1) }); }} className="w-5 h-5 flex items-center justify-center text-slate-300 hover:text-cyan-400 hover:bg-slate-700 rounded-full" title="Thu nhỏ">
+                       <ZoomOut className="w-3 h-3" />
+                     </button>
+                     <button onClick={(e) => { e.stopPropagation(); updateEquipment(item.id, { scale: Math.min(2.5, (item.scale || 1) + 0.1) }); }} className="w-5 h-5 flex items-center justify-center text-slate-300 hover:text-cyan-400 hover:bg-slate-700 rounded-full" title="Phóng to">
+                       <ZoomIn className="w-3 h-3" />
+                     </button>
+                     <div className="w-px h-3 bg-slate-600 mx-0.5"></div>
+                     <button onClick={(e) => { e.stopPropagation(); updateEquipment(item.id, { rotation: (item.rotation || 0) - 15 }); }} className="w-5 h-5 flex items-center justify-center text-slate-300 hover:text-violet-400 hover:bg-slate-700 rounded-full" title="Xoay trái">
+                       <RotateCcw className="w-3 h-3" />
+                     </button>
+                     <button onClick={(e) => { e.stopPropagation(); updateEquipment(item.id, { rotation: (item.rotation || 0) + 15 }); }} className="w-5 h-5 flex items-center justify-center text-slate-300 hover:text-violet-400 hover:bg-slate-700 rounded-full" title="Xoay phải">
+                       <RotateCw className="w-3 h-3" />
+                     </button>
+                   </div>
 
                    {/* Message popup */}
                    <AnimatePresence>
