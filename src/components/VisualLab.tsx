@@ -52,8 +52,6 @@ const categoryColors: Record<string, { bg: string; text: string; border: string;
 
 export const VisualLab: React.FC<VisualLabProps> = ({ chemicals, isHeating = false, onHeatingToggle, problemResult }) => {
   const [activeDropper, setActiveDropper] = useState<string | null>(null);
-
-  const [activeDropper, setActiveDropper] = useState<string | null>(null);
   const [reactionLog, setReactionLog] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
@@ -390,8 +388,6 @@ export const VisualLab: React.FC<VisualLabProps> = ({ chemicals, isHeating = fal
                 {isHeating ? "Tắt đèn cồn" : "Bật đèn cồn"}
               </div>
             </div>
-          </div>
-
           </div>
         </div>
 
