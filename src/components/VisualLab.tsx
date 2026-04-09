@@ -51,17 +51,7 @@ const categoryColors: Record<string, { bg: string; text: string; border: string;
 };
 
 export const VisualLab: React.FC<VisualLabProps> = ({ chemicals, isHeating = false, onHeatingToggle, problemResult }) => {
-  const [testTubes, setTestTubes] = useState<TestTubeData[]>(
-    Array.from({ length: 7 }, (_, i) => ({
-      id: i + 1,
-      chemicals: [],
-      color: '#ffffff',
-      bubbles: false,
-      precipitate: false,
-      message: '',
-      isReacting: false
-    }))
-  );
+  const [activeDropper, setActiveDropper] = useState<string | null>(null);
 
   const [activeDropper, setActiveDropper] = useState<string | null>(null);
   const [reactionLog, setReactionLog] = useState<string[]>([]);
@@ -127,23 +117,34 @@ export const VisualLab: React.FC<VisualLabProps> = ({ chemicals, isHeating = fal
     setActiveDropper(id);
   };
 
-  const dropIntoTube = async (tubeId: number) => {
+  const canHoldChemicals = (equipmentId: string) => {
+    const eq = LAB_EQUIPMENT.find(e => e.id === equipmentId);
+    return eq && (eq.categoryId === 'containers' || eq.categoryId === 'tubes' || equipmentId === 'trough' || equipmentId === 'mortar');
+  };
+
+  const dropIntoEquipment = async (instId: string) => {
     if (!activeDropper) return;
 
-    const tubeIndex = testTubes.findIndex(t => t.id === tubeId);
-    const tube = testTubes[tubeIndex];
+    const instIndex = placedEquipment.findIndex(t => t.id === instId);
+    const inst = placedEquipment[instIndex];
 
-    if (tube.chemicals.includes(activeDropper)) {
-      Swal.fire('Thông báo', 'Hóa chất này đã có trong ống nghiệm!', 'info');
+    if (!canHoldChemicals(inst.equipmentId)) {
+      Swal.fire('Thông báo', 'Dụng cụ này không thể chứa hóa chất!', 'warning');
       return;
     }
 
-    const newChemicals = [...tube.chemicals, activeDropper];
-    const updatedTubes = [...testTubes];
-    updatedTubes[tubeIndex] = { ...tube, chemicals: newChemicals, isReacting: true };
-    setTestTubes(updatedTubes);
+    if (inst.chemicals.includes(activeDropper)) {
+      Swal.fire('Thông báo', 'Hóa chất này đã có trong dụng cụ!', 'info');
+      return;
+    }
 
-    setReactionLog(prev => [`[${new Date().toLocaleTimeString()}] Thêm ${chemicals.find(c => c.id === activeDropper)?.name} vào Ống ${tubeId}`, ...prev]);
+    const newChemicals = [...inst.chemicals, activeDropper];
+    const updatedEqs = [...placedEquipment];
+    updatedEqs[instIndex] = { ...inst, chemicals: newChemicals, isReacting: true };
+    setPlacedEquipment(updatedEqs);
+
+    const eqName = LAB_EQUIPMENT.find(e => e.id === inst.equipmentId)?.name || 'Dụng cụ';
+    setReactionLog(prev => [`[${new Date().toLocaleTimeString()}] Thêm ${chemicals.find(c => c.id === activeDropper)?.name} vào ${eqName}`, ...prev]);
 
     if (newChemicals.length >= 2) {
       try {
@@ -151,39 +152,39 @@ export const VisualLab: React.FC<VisualLabProps> = ({ chemicals, isHeating = fal
         const result = await predictReaction(chemNames);
 
         if (result) {
-          updatedTubes[tubeIndex] = {
-            ...updatedTubes[tubeIndex],
+          updatedEqs[instIndex] = {
+            ...updatedEqs[instIndex],
             color: result.color,
             bubbles: result.bubbles,
             precipitate: result.precipitate,
             message: result.message,
             isReacting: false
           };
-          setTestTubes([...updatedTubes]);
+          setPlacedEquipment([...updatedEqs]);
           setReactionLog(prev => [
-            `[${new Date().toLocaleTimeString()}] Ống ${tubeId}: ${result.message}`,
+            `[${new Date().toLocaleTimeString()}] ${eqName}: ${result.message}`,
             `[${new Date().toLocaleTimeString()}] Phương trình: ${result.equation}`,
             ...prev
           ]);
         }
       } catch (error) {
         console.error("Reaction prediction failed:", error);
-        updatedTubes[tubeIndex].isReacting = false;
-        setTestTubes([...updatedTubes]);
+        updatedEqs[instIndex].isReacting = false;
+        setPlacedEquipment([...updatedEqs]);
       }
     } else {
       const chem = chemicals.find(c => c.id === activeDropper);
-      updatedTubes[tubeIndex] = {
-        ...updatedTubes[tubeIndex],
+      updatedEqs[instIndex] = {
+        ...updatedEqs[instIndex],
         color: chem?.color || '#ffffff',
         isReacting: false
       };
-      setTestTubes([...updatedTubes]);
+      setPlacedEquipment([...updatedEqs]);
     }
   };
 
-  const resetTube = (id: number) => {
-    setTestTubes(prev => prev.map(t => t.id === id ? {
+  const resetEquipment = (instId: string) => {
+    setPlacedEquipment(prev => prev.map(t => t.id === instId ? {
       ...t,
       chemicals: [],
       color: '#ffffff',
@@ -195,15 +196,6 @@ export const VisualLab: React.FC<VisualLabProps> = ({ chemicals, isHeating = fal
   };
 
   const resetAll = () => {
-    setTestTubes(prev => prev.map(t => ({
-      ...t,
-      chemicals: [],
-      color: '#ffffff',
-      bubbles: false,
-      precipitate: false,
-      message: '',
-      isReacting: false
-    })));
     setActiveDropper(null);
     setReactionLog([]);
     setPlacedEquipment([]);
@@ -216,7 +208,13 @@ export const VisualLab: React.FC<VisualLabProps> = ({ chemicals, isHeating = fal
       equipmentId: equipmentId,
       x: 100 + Math.random() * 50, // Slight random offset
       y: 100 + Math.random() * 50,
-      rotation: 0
+      rotation: 0,
+      chemicals: [],
+      color: '#ffffff',
+      bubbles: false,
+      precipitate: false,
+      message: '',
+      isReacting: false
     };
     setPlacedEquipment(prev => [...prev, newEquipment]);
     setReactionLog(prev => [`[${new Date().toLocaleTimeString()}] Đã thêm ${LAB_EQUIPMENT.find(e => e.id === equipmentId)?.name} vào phòng lab.`, ...prev]);
@@ -280,18 +278,80 @@ export const VisualLab: React.FC<VisualLabProps> = ({ chemicals, isHeating = fal
                    dragMomentum={false}
                    initial={{ x: item.x, y: item.y, scale: 0 }}
                    animate={{ scale: 1 }}
-                   className="absolute origin-center pointer-events-auto group cursor-grab active:cursor-grabbing"
+                   onClick={() => dropIntoEquipment(item.id)}
+                   className={cn(
+                     "absolute origin-center pointer-events-auto group cursor-grab active:cursor-grabbing",
+                     activeDropper && canHoldChemicals(eqDef.id) && "hover:ring-4 ring-violet-500/50 rounded-lg"
+                   )}
                    style={{ width: eqDef.width, height: eqDef.height }}
                  >
-                   <EquipmentSVG id={eqDef.id} width={eqDef.width} height={eqDef.height} />
+                   {/* Chemical labels */}
+                   {item.chemicals && item.chemicals.length > 0 && (
+                     <div className="absolute -top-10 left-1/2 -translate-x-1/2 flex flex-col gap-0.5 items-center justify-end h-10 w-24 pointer-events-none">
+                       {item.chemicals.map(chemId => (
+                         <span key={chemId} className="text-[7px] font-bold px-1 py-0 rounded bg-violet-500/30 text-violet-200 leading-tight border border-violet-500/40 backdrop-blur-sm whitespace-nowrap shadow-sm">
+                           {chemicals.find(c => c.id === chemId)?.formula}
+                         </span>
+                       ))}
+                     </div>
+                   )}
+
+                   <EquipmentSVG 
+                     id={eqDef.id} 
+                     width={eqDef.width} 
+                     height={eqDef.height} 
+                     fillLevel={item.chemicals && item.chemicals.length > 0 ? Math.min(item.chemicals.length * 0.25 + 0.1, 0.9) : 0}
+                     liquidColor={item.color}
+                     bubbles={item.bubbles || (isHeating && item.chemicals && item.chemicals.length > 0)}
+                   />
                    
-                   {/* Delete button (shows on hover) */}
+                   {/* Loading overlay */}
+                   <AnimatePresence>
+                     {item.isReacting && (
+                       <motion.div
+                         initial={{ opacity: 0 }}
+                         animate={{ opacity: 1 }}
+                         exit={{ opacity: 0 }}
+                         className="absolute inset-0 flex items-center justify-center bg-slate-900/40 backdrop-blur-[1px] rounded-lg pointer-events-none"
+                       >
+                         <Loader2 className="w-4 h-4 text-violet-400 animate-spin drop-shadow-md" />
+                       </motion.div>
+                     )}
+                   </AnimatePresence>
+
+                   {/* Delete button (shows on hover, top right) */}
                    <button
                      onClick={(e) => { e.stopPropagation(); removeEquipment(item.id); }}
                      className="absolute -top-3 -right-3 w-6 h-6 bg-red-500/90 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-lg z-30"
+                     title="Xóa dụng cụ"
                    >
                      <Trash2 className="w-3 h-3" />
                    </button>
+
+                   {/* Reset chemicals button (shows on hover, top left) */}
+                   {item.chemicals && item.chemicals.length > 0 && (
+                     <button
+                       onClick={(e) => { e.stopPropagation(); resetEquipment(item.id); }}
+                       className="absolute -top-3 -left-3 w-6 h-6 bg-amber-500/90 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-lg z-30"
+                       title="Đổ hóa chất"
+                     >
+                       <RotateCcw className="w-3 h-3" />
+                     </button>
+                   )}
+
+                   {/* Message popup */}
+                   <AnimatePresence>
+                     {item.message && (
+                       <motion.div
+                         initial={{ opacity: 0, y: 5 }}
+                         animate={{ opacity: 1, y: 0 }}
+                         exit={{ opacity: 0, y: -5 }}
+                         className="absolute -right-24 top-1/2 -translate-y-1/2 text-[9px] font-medium text-slate-200 text-center w-[80px] leading-tight bg-slate-800/95 p-1.5 rounded-lg border border-slate-600/50 shadow-xl pointer-events-none z-40 backdrop-blur-md"
+                       >
+                         {item.message}
+                       </motion.div>
+                     )}
+                   </AnimatePresence>
                  </motion.div>
                );
              })}
@@ -332,108 +392,6 @@ export const VisualLab: React.FC<VisualLabProps> = ({ chemicals, isHeating = fal
             </div>
           </div>
 
-          {/* Test Tube Rack */}
-          <div className="relative w-full max-w-3xl">
-            {/* Rack Frame */}
-            <div className="absolute bottom-0 left-0 right-0 h-20 bg-amber-900/20 border-t-4 border-amber-800/30 rounded-t-xl" />
-            <div className="absolute bottom-3 left-0 right-0 h-14 bg-amber-900/30 rounded-lg mx-4" />
-
-            {/* Tubes */}
-            <div className="relative flex justify-around items-end px-6 gap-3">
-              {testTubes.map(tube => (
-                <div key={tube.id} className="flex flex-col items-center gap-3 group">
-                  <div className="text-[10px] font-bold text-slate-400 bg-slate-800/80 px-2 py-0.5 rounded-full border border-slate-600/30">Ống {tube.id}</div>
-
-                  {/* Các hóa chất đã thêm */}
-                  {tube.chemicals.length > 0 && (
-                    <div className="flex flex-wrap gap-0.5 justify-center max-w-[60px]">
-                      {tube.chemicals.map(chemId => (
-                        <span key={chemId} className="text-[8px] font-bold px-1 py-0 rounded bg-violet-500/20 text-violet-300 leading-tight border border-violet-500/30">
-                          {chemicals.find(c => c.id === chemId)?.formula}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-
-                  <motion.div
-                    whileHover={{ scale: 1.05 }}
-                    onClick={() => dropIntoTube(tube.id)}
-                    className={cn(
-                      "relative w-10 h-44 cursor-pointer transition-all",
-                      activeDropper && "hover:ring-4 ring-violet-500/30 rounded-full"
-                    )}
-                  >
-                    {/* Glass Tube */}
-                    <div className="absolute inset-0 bg-slate-800/40 backdrop-blur-sm border-2 border-slate-500/40 rounded-full overflow-hidden shadow-[inset_0_0_15px_rgba(0,0,0,0.3),0_0_10px_rgba(148,163,184,0.05)]">
-                      {/* Liquid */}
-                      <motion.div
-                        initial={false}
-                        animate={{ height: tube.chemicals.length > 0 ? '60%' : '0%' }}
-                        className="absolute bottom-0 left-0 right-0 transition-colors duration-1000"
-                        style={{ backgroundColor: tube.color, opacity: 0.85 }}
-                      >
-                        {/* Bubbles */}
-                        {(tube.bubbles || (isHeating && tube.chemicals.length > 0)) && (
-                          <div className="absolute inset-0 overflow-hidden">
-                            {Array.from({ length: 12 }).map((_, i) => (
-                              <motion.div
-                                key={i}
-                                animate={{
-                                  y: [-10, -100],
-                                  opacity: [0, 1, 0],
-                                  x: [Math.random() * 16, Math.random() * 16]
-                                }}
-                                transition={{
-                                  duration: 0.8 + Math.random(),
-                                  repeat: Infinity,
-                                  delay: Math.random() * 2
-                                }}
-                                className="absolute bottom-0 w-1 h-1 bg-white rounded-full"
-                              />
-                            ))}
-                          </div>
-                        )}
-                      </motion.div>
-                    </div>
-
-                    {/* Reaction Overlay */}
-                    <AnimatePresence>
-                      {tube.isReacting && (
-                        <motion.div
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          exit={{ opacity: 0 }}
-                          className="absolute inset-0 flex items-center justify-center bg-slate-900/40 backdrop-blur-[2px] rounded-full"
-                        >
-                          <Loader2 className="w-5 h-5 text-violet-400 animate-spin" />
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-
-                    {/* Reset Button */}
-                    {tube.chemicals.length > 0 && (
-                      <button
-                        onClick={(e) => { e.stopPropagation(); resetTube(tube.id); }}
-                        className="absolute -top-2 -right-2 w-5 h-5 bg-red-500/80 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-lg border border-red-400/30"
-                      >
-                        <RotateCcw className="w-2.5 h-2.5" />
-                      </button>
-                    )}
-                  </motion.div>
-
-                  {/* Kết quả phản ứng */}
-                  {tube.message && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 5 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="text-[9px] font-medium text-slate-200 text-center max-w-[80px] leading-tight bg-slate-800/90 px-1.5 py-1 rounded-lg border border-slate-600/30 shadow-lg"
-                    >
-                      {tube.message}
-                    </motion.div>
-                  )}
-                </div>
-              ))}
-            </div>
           </div>
         </div>
 
