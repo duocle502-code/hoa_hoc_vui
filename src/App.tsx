@@ -410,7 +410,7 @@ export default function App() {
                         <h2 className="text-2xl font-bold text-slate-100">Phòng thí nghiệm</h2>
                         <div className="flex bg-slate-800/60 p-1 rounded-xl border border-slate-700/50">
                           <button 
-                            onClick={() => setLabMode('visual')}
+                            onClick={() => { setLabMode('visual'); setIsHeating(false); }}
                             className={cn(
                               "px-4 py-1.5 rounded-lg text-sm font-bold transition-all duration-200",
                               labMode === 'visual' ? "bg-gradient-to-r from-violet-600 to-cyan-600 text-white shadow-lg" : "text-slate-400 hover:text-slate-200"
@@ -419,7 +419,7 @@ export default function App() {
                             Chế độ Trực quan
                           </button>
                           <button 
-                            onClick={() => setLabMode('3d')}
+                            onClick={() => { setLabMode('3d'); setIsHeating(false); }}
                             className={cn(
                               "px-4 py-1.5 rounded-lg text-sm font-bold transition-all duration-200",
                               labMode === '3d' ? "bg-gradient-to-r from-violet-600 to-cyan-600 text-white shadow-lg" : "text-slate-400 hover:text-slate-200"
