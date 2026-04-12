@@ -445,29 +445,61 @@ export default function App() {
                         <VisualLab chemicals={chemicals} isHeating={isHeating} onHeatingToggle={() => setIsHeating(!isHeating)} problemResult={labProblemResult} />
                       </div>
                     ) : (
-                      <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 flex-1 min-h-0">
-                        <div className="lg:col-span-3 flex flex-col gap-6">
-                          <div className="relative flex-1 glass-card rounded-3xl overflow-hidden min-h-[500px] neon-border">
-                            <LabCanvas 
-                              activeExperiment={activeExperiment} 
+                      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 flex-1 min-h-0">
+                        {/* ── 3D Canvas Area ── */}
+                        <div className="lg:col-span-3 flex flex-col gap-4">
+                          <div
+                            className="relative flex-1 rounded-3xl overflow-hidden min-h-[500px]"
+                            style={{
+                              background: 'radial-gradient(ellipse at 50% 0%, #0d1a3a 0%, #060b18 100%)',
+                              boxShadow: '0 0 0 1px rgba(124,58,237,0.25), 0 0 40px rgba(124,58,237,0.1), inset 0 0 60px rgba(0,0,0,0.4)',
+                            }}
+                          >
+                            <LabCanvas
+                              activeExperiment={activeExperiment}
                               customReaction={customReaction}
                               apparatusType={apparatusType}
                               isHeating={isHeating}
-                              onReaction={handleReaction} 
+                              onReaction={handleReaction}
                             />
-                            
-                            {/* AR Overlay UI */}
-                            <div className="absolute top-6 left-6 flex flex-col gap-3">
-                              <div className="glass-card px-4 py-2 rounded-full flex items-center gap-2 text-sm font-bold text-cyan-300">
-                                <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-                                AR Mode: Active
+
+                            {/* ── Top-left HUD ── */}
+                            <div className="absolute top-4 left-4 flex flex-col gap-2 pointer-events-none">
+                              {/* AR Badge */}
+                              <div
+                                className="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold text-cyan-200"
+                                style={{
+                                  background: 'rgba(6, 11, 24, 0.75)',
+                                  backdropFilter: 'blur(12px)',
+                                  border: '1px solid rgba(34,211,238,0.3)',
+                                  boxShadow: '0 0 12px rgba(34,211,238,0.15)',
+                                }}
+                              >
+                                <span className="relative flex h-2 w-2">
+                                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
+                                  <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500" />
+                                </span>
+                                3D AR · LIVE
                               </div>
+
+                              {/* Selected chemicals badge */}
                               {selectedChemicals.length > 0 && (
-                                <div className="glass-card p-3 rounded-2xl space-y-2 min-w-[150px]">
-                                  <div className="text-[10px] font-bold text-slate-500 uppercase">Đã thêm:</div>
+                                <div
+                                  className="p-2.5 rounded-2xl space-y-2"
+                                  style={{
+                                    background: 'rgba(6, 11, 24, 0.75)',
+                                    backdropFilter: 'blur(12px)',
+                                    border: '1px solid rgba(124,58,237,0.3)',
+                                  }}
+                                >
+                                  <div className="text-[9px] font-bold text-violet-400 uppercase tracking-wider">Đang trộn:</div>
                                   <div className="flex flex-wrap gap-1">
                                     {selectedChemicals.map(id => (
-                                      <span key={id} className="text-[10px] font-bold px-2 py-0.5 rounded bg-violet-500/20 text-violet-300 border border-violet-500/30">
+                                      <span
+                                        key={id}
+                                        className="text-[10px] font-bold px-2 py-0.5 rounded-full text-violet-200"
+                                        style={{ background: 'rgba(124,58,237,0.25)', border: '1px solid rgba(124,58,237,0.4)' }}
+                                      >
                                         {chemicals.find(c => c.id === id)?.formula}
                                       </span>
                                     ))}
@@ -476,122 +508,195 @@ export default function App() {
                               )}
                             </div>
 
-                            {/* Apparatus Controls */}
-                            <div className="absolute top-6 right-6 flex flex-col gap-3">
-                              <div className="glass-card p-2 rounded-2xl flex flex-col gap-2">
-                                <button 
+                            {/* ── Top-right controls ── */}
+                            <div className="absolute top-4 right-4 flex flex-col gap-2">
+                              {/* Apparatus picker */}
+                              <div
+                                className="flex flex-col gap-1.5 p-2 rounded-2xl"
+                                style={{
+                                  background: 'rgba(6,11,24,0.8)',
+                                  backdropFilter: 'blur(12px)',
+                                  border: '1px solid rgba(124,58,237,0.25)',
+                                }}
+                              >
+                                <button
                                   onClick={() => setApparatusType('beaker')}
-                                  className={cn(
-                                    "p-3 rounded-xl transition-all",
-                                    apparatusType === 'beaker' ? "bg-gradient-to-r from-violet-600 to-cyan-600 text-white shadow-lg neon-glow" : "text-slate-400 hover:bg-slate-700/50 hover:text-slate-200"
-                                  )}
+                                  className="p-2.5 rounded-xl transition-all"
+                                  style={apparatusType === 'beaker' ? {
+                                    background: 'linear-gradient(135deg, #7c3aed, #06b6d4)',
+                                    color: '#fff',
+                                    boxShadow: '0 0 14px rgba(124,58,237,0.5)',
+                                  } : { color: '#94a3b8' }}
                                   title="Cốc thủy tinh"
                                 >
-                                  <Beaker className="w-6 h-6" />
+                                  <Beaker className="w-5 h-5" />
                                 </button>
-                                <button 
+                                <button
                                   onClick={() => setApparatusType('test-tube')}
-                                  className={cn(
-                                    "p-3 rounded-xl transition-all",
-                                    apparatusType === 'test-tube' ? "bg-gradient-to-r from-violet-600 to-cyan-600 text-white shadow-lg neon-glow" : "text-slate-400 hover:bg-slate-700/50 hover:text-slate-200"
-                                  )}
+                                  className="p-2.5 rounded-xl transition-all"
+                                  style={apparatusType === 'test-tube' ? {
+                                    background: 'linear-gradient(135deg, #7c3aed, #06b6d4)',
+                                    color: '#fff',
+                                    boxShadow: '0 0 14px rgba(124,58,237,0.5)',
+                                  } : { color: '#94a3b8' }}
                                   title="Ống nghiệm"
                                 >
-                                  <FlaskConical className="w-6 h-6" />
+                                  <FlaskConical className="w-5 h-5" />
                                 </button>
                               </div>
 
-                              <button 
+                              {/* Heat button */}
+                              <button
                                 onClick={() => setIsHeating(!isHeating)}
-                                className={cn(
-                                  "glass-card p-4 rounded-2xl transition-all flex items-center justify-center",
-                                  isHeating ? "bg-orange-500/20 text-orange-400 border-orange-500/30" : "text-slate-400 hover:bg-slate-800/80 hover:text-slate-200"
-                                )}
-                                style={isHeating ? { boxShadow: '0 0 20px rgba(249, 115, 22, 0.3)' } : {}}
-                                title="Đèn cồn"
+                                className="p-3 rounded-2xl transition-all flex items-center justify-center"
+                                style={isHeating ? {
+                                  background: 'rgba(249,115,22,0.2)',
+                                  color: '#fb923c',
+                                  border: '1px solid rgba(249,115,22,0.4)',
+                                  boxShadow: '0 0 20px rgba(249,115,22,0.35)',
+                                } : {
+                                  background: 'rgba(6,11,24,0.8)',
+                                  backdropFilter: 'blur(12px)',
+                                  border: '1px solid rgba(124,58,237,0.2)',
+                                  color: '#64748b',
+                                }}
+                                title="Bật/tắt đèn cồn"
                               >
-                                <Zap className={cn("w-6 h-6", isHeating && "animate-pulse")} />
+                                <Zap className={cn('w-5 h-5', isHeating && 'animate-pulse')} />
                               </button>
                             </div>
 
-                            <div className="absolute bottom-6 left-6 right-6 flex items-center justify-between">
-                              <div className="flex gap-3">
-                                <button 
-                                  onClick={resetLab}
-                                  className="glass-card p-3 rounded-2xl hover:bg-slate-800/80 transition-colors"
-                                  title="Làm sạch"
-                                >
-                                  <RotateCcw className="w-6 h-6 text-slate-400" />
-                                </button>
-                              </div>
-                              <div className="flex gap-3">
+                            {/* ── Bottom action bar ── */}
+                            <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between">
+                              <button
+                                onClick={resetLab}
+                                className="p-2.5 rounded-2xl transition-all"
+                                style={{
+                                  background: 'rgba(6,11,24,0.8)',
+                                  backdropFilter: 'blur(12px)',
+                                  border: '1px solid rgba(124,58,237,0.2)',
+                                  color: '#94a3b8',
+                                }}
+                                title="Làm sạch"
+                              >
+                                <RotateCcw className="w-5 h-5" />
+                              </button>
+                              <div className="flex gap-2">
                                 {selectedChemicals.length >= 2 && !activeExperiment && (
-                                  <button 
+                                  <button
                                     onClick={handleMix}
                                     disabled={isReacting}
-                                    className="px-8 py-3 bg-gradient-to-r from-violet-600 to-cyan-600 text-white rounded-2xl font-bold shadow-lg shadow-violet-500/20 hover:shadow-violet-500/40 transition-all flex items-center gap-2 glow-btn"
+                                    className="px-6 py-2.5 rounded-2xl font-bold text-sm text-white flex items-center gap-2 transition-all"
+                                    style={{
+                                      background: 'linear-gradient(135deg, #7c3aed, #06b6d4)',
+                                      boxShadow: '0 0 20px rgba(124,58,237,0.4)',
+                                    }}
                                   >
-                                    {isReacting ? <Loader2 className="w-5 h-5 animate-spin" /> : <Zap className="w-5 h-5" />}
+                                    {isReacting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
                                     Tiến hành phản ứng
                                   </button>
                                 )}
-                                <button 
+                                <button
                                   onClick={resetLab}
-                                  className="px-6 py-3 bg-red-500/20 text-red-400 border border-red-500/30 rounded-2xl font-bold hover:bg-red-500/30 transition-colors"
+                                  className="px-4 py-2.5 rounded-2xl font-bold text-sm text-red-400 transition-all"
+                                  style={{
+                                    background: 'rgba(239,68,68,0.1)',
+                                    border: '1px solid rgba(239,68,68,0.25)',
+                                  }}
                                 >
                                   Dừng thí nghiệm
                                 </button>
                               </div>
                             </div>
+
+                            {/* ── Drag hint ── */}
+                            <div
+                              className="absolute bottom-4 left-1/2 -translate-x-1/2 text-[10px] font-medium text-slate-500 pointer-events-none"
+                              style={{ letterSpacing: '0.05em' }}
+                            >
+                              🖱 Kéo để xoay · Cuộn để zoom
+                            </div>
                           </div>
 
                           {/* Reaction Log */}
-                          <div className="glass-card rounded-2xl p-6 text-slate-300 font-mono text-sm h-48 overflow-y-auto neon-border">
-                            <div className="flex items-center gap-2 text-slate-500 mb-4 border-b border-slate-700/50 pb-2">
-                              <Info className="w-4 h-4 text-cyan-500" />
-                              <span className="text-cyan-400 font-bold">Nhật ký phản ứng</span>
+                          <div
+                            className="rounded-2xl p-4 font-mono text-xs h-36 overflow-y-auto"
+                            style={{
+                              background: 'rgba(6,11,24,0.85)',
+                              backdropFilter: 'blur(12px)',
+                              border: '1px solid rgba(124,58,237,0.2)',
+                            }}
+                          >
+                            <div className="flex items-center gap-2 mb-3 pb-2 border-b border-slate-700/40">
+                              <Info className="w-3.5 h-3.5 text-cyan-500" />
+                              <span className="text-cyan-400 font-bold text-[10px] uppercase tracking-wider">Nhật ký phản ứng</span>
                             </div>
                             {reactionLog.length === 0 ? (
-                              <div className="text-slate-600 italic">Chưa có hoạt động nào...</div>
+                              <div className="text-slate-600 italic text-[11px]">Chưa có hoạt động nào...</div>
                             ) : (
                               reactionLog.map((log, i) => (
-                                <div key={i} className="mb-1 text-emerald-400">{log}</div>
+                                <div key={i} className="mb-1 flex gap-2 text-[11px]">
+                                  <span className="text-slate-600 shrink-0">{log.split(']')[0]}]</span>
+                                  <span className={cn(
+                                    log.includes('Phương trình') ? 'text-cyan-400' : 'text-emerald-400'
+                                  )}>{log.split(']')[1]}</span>
+                                </div>
                               ))
                             )}
                           </div>
                         </div>
 
-                        {/* 3D Mode Chemical Panel */}
-                        <div className="space-y-6">
-                          <div className="glass-card p-6 rounded-2xl">
-                            <h3 className="font-bold mb-4 flex items-center gap-2 text-slate-100">
-                              <FlaskConical className="w-5 h-5 text-violet-400" />
-                              Dụng cụ & Hóa chất
+                        {/* ── 3D Chemical Panel (right) ── */}
+                        <div className="flex flex-col gap-4 overflow-hidden">
+                          <div
+                            className="rounded-2xl p-4 flex-1 overflow-y-auto"
+                            style={{
+                              background: 'rgba(6,11,24,0.85)',
+                              backdropFilter: 'blur(12px)',
+                              border: '1px solid rgba(124,58,237,0.2)',
+                            }}
+                          >
+                            <h3 className="font-bold mb-3 flex items-center gap-2 text-slate-100 text-sm">
+                              <FlaskConical className="w-4 h-4 text-violet-400" />
+                              Hóa chất
                             </h3>
-                            <div className="space-y-3">
+                            <div className="space-y-2">
                               {chemicals.map(chem => (
-                                <div 
-                                  key={chem.id} 
+                                <div
+                                  key={chem.id}
                                   onClick={() => toggleChemical(chem.id)}
-                                  className={cn(
-                                    "flex items-center justify-between p-3 rounded-xl border transition-all cursor-pointer group",
-                                    selectedChemicals.includes(chem.id) 
-                                      ? "border-violet-500/50 bg-violet-500/10" 
-                                      : "bg-slate-800/50 border-slate-700/50 hover:border-violet-500/30"
-                                  )}
+                                  className="flex items-center justify-between p-2.5 rounded-xl cursor-pointer transition-all"
+                                  style={selectedChemicals.includes(chem.id) ? {
+                                    background: 'rgba(124,58,237,0.15)',
+                                    border: '1px solid rgba(124,58,237,0.4)',
+                                    boxShadow: '0 0 10px rgba(124,58,237,0.1)',
+                                  } : {
+                                    background: 'rgba(30,41,59,0.5)',
+                                    border: '1px solid rgba(51,65,85,0.5)',
+                                  }}
                                 >
-                                  <div className="flex items-center gap-3">
-                                    <div className="w-8 h-8 rounded-lg shadow-sm border border-slate-600/50" style={{ backgroundColor: chem.color }} />
+                                  <div className="flex items-center gap-2.5">
+                                    <div
+                                      className="w-7 h-9 rounded-lg relative overflow-hidden shrink-0"
+                                      style={{ background: '#0f172a', border: '1px solid rgba(51,65,85,0.6)' }}
+                                    >
+                                      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3.5 h-1 rounded-b-sm" style={{ background: 'rgba(148,163,184,0.4)' }} />
+                                      <div className="absolute bottom-0 left-0 right-0 h-[55%]" style={{ background: chem.color, opacity: 0.85 }} />
+                                    </div>
                                     <div>
-                                      <div className="text-sm font-bold text-slate-200">{chem.name}</div>
-                                      <div className="text-xs text-slate-500">{chem.formula}</div>
+                                      <div className="text-xs font-bold text-slate-200">{chem.name}</div>
+                                      <div className="text-[10px] font-mono text-violet-400">{chem.formula}</div>
                                     </div>
                                   </div>
-                                  <div className={cn(
-                                    "p-1.5 rounded-lg transition-colors",
-                                    selectedChemicals.includes(chem.id) ? "bg-violet-500 text-white" : "bg-slate-700 text-slate-400 group-hover:text-violet-400"
-                                  )}>
-                                    {selectedChemicals.includes(chem.id) ? <CheckCircle2 className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+                                  <div
+                                    className="p-1.5 rounded-lg transition-colors shrink-0"
+                                    style={selectedChemicals.includes(chem.id) ? {
+                                      background: 'rgba(124,58,237,0.7)', color: '#fff'
+                                    } : {
+                                      background: 'rgba(30,41,59,0.8)', color: '#64748b'
+                                    }}
+                                  >
+                                    {selectedChemicals.includes(chem.id) ? <CheckCircle2 className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}
                                   </div>
                                 </div>
                               ))}
@@ -599,11 +704,18 @@ export default function App() {
                           </div>
 
                           {/* Safety Warning */}
-                          <div className="p-5 rounded-2xl bg-amber-500/5 border border-amber-500/20 neon-border" style={{ borderColor: 'rgba(245, 158, 11, 0.2)', boxShadow: '0 0 15px rgba(245, 158, 11, 0.05)' }}>
-                            <h4 className="text-amber-400 font-bold text-sm mb-2 flex items-center gap-2">
-                              <AlertTriangle className="w-4 h-4" /> Cảnh báo an toàn
+                          <div
+                            className="p-4 rounded-2xl"
+                            style={{
+                              background: 'rgba(245,158,11,0.06)',
+                              border: '1px solid rgba(245,158,11,0.2)',
+                              boxShadow: '0 0 15px rgba(245,158,11,0.05)',
+                            }}
+                          >
+                            <h4 className="text-amber-400 font-bold text-xs mb-2 flex items-center gap-2">
+                              <AlertTriangle className="w-3.5 h-3.5" /> Cảnh báo an toàn
                             </h4>
-                            <ul className="text-xs text-amber-300/70 space-y-1 list-disc pl-4">
+                            <ul className="text-[10px] text-amber-300/70 space-y-1 list-disc pl-4">
                               <li>Luôn đeo kính bảo hộ ảo.</li>
                               <li>Không trộn lẫn các axit mạnh mà không có hướng dẫn.</li>
                               <li>Kiểm tra nhãn hóa chất trước khi sử dụng.</li>
