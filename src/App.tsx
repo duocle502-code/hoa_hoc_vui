@@ -53,12 +53,17 @@ export default function App() {
   const handleReaction = (data: any) => {
     setReactionLog(prev => [`[${new Date().toLocaleTimeString()}] ${data.message}`, ...prev]);
     if (data.status === 'completed' && !isReacting) {
+      // Toast nhỏ — không có backdrop, không tối màn hình, không chặn tương tác
       Swal.fire({
-        title: 'Thành công!',
-        text: data.message,
+        toast: true,
+        position: 'top-end',
         icon: 'success',
-        timer: 2000,
-        showConfirmButton: false
+        title: data.message,
+        showConfirmButton: false,
+        timer: 2500,
+        timerProgressBar: true,
+        backdrop: false,
+        customClass: { popup: 'text-sm' },
       });
     }
   };
