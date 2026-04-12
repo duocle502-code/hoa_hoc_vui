@@ -185,8 +185,8 @@ export const LabCanvas: React.FC<LabCanvasProps> = ({
 
     // Scene
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x060b18);
-    scene.fog = new THREE.FogExp2(0x060b18, 0.045);
+    scene.background = new THREE.Color(0x1e293b);
+    scene.fog = new THREE.FogExp2(0x1e293b, 0.022);
 
     // Camera — fixed position, only moves on drag
     const camera = new THREE.PerspectiveCamera(52, W / H, 0.1, 200);
@@ -206,9 +206,16 @@ export const LabCanvas: React.FC<LabCanvasProps> = ({
     container.appendChild(renderer.domElement);
 
     // ── Lights ───────────────────────────────────────────────────────────────
-    scene.add(new THREE.AmbientLight(0x1a2540, 2.2));
+    // Ambient — much brighter so scene looks lit
+    scene.add(new THREE.AmbientLight(0xc8d8f0, 3.5));
 
-    const keyLight = new THREE.DirectionalLight(0x88c0f8, 2.6);
+    // Overhead white fill light (like lab ceiling)
+    const ceilLight = new THREE.DirectionalLight(0xffffff, 2.0);
+    ceilLight.position.set(0, 12, 0);
+    scene.add(ceilLight);
+
+    // Key light — cool blue from top-left
+    const keyLight = new THREE.DirectionalLight(0xa5c8f8, 2.2);
     keyLight.position.set(-4, 8, 5);
     keyLight.castShadow = true;
     keyLight.shadow.mapSize.width  = 2048;
@@ -221,15 +228,17 @@ export const LabCanvas: React.FC<LabCanvasProps> = ({
     keyLight.shadow.camera.bottom = -8;
     scene.add(keyLight);
 
-    const fillLight = new THREE.DirectionalLight(0xc084fc, 1.1);
-    fillLight.position.set(5, 3, -3);
+    // Front fill — warm white
+    const fillLight = new THREE.DirectionalLight(0xfff4e0, 1.6);
+    fillLight.position.set(3, 5, 8);
     scene.add(fillLight);
 
-    const rimLight = new THREE.DirectionalLight(0x22d3ee, 0.7);
-    rimLight.position.set(0, -2, -6);
-    scene.add(rimLight);
+    // Side fill — violet accent
+    const sideLight = new THREE.DirectionalLight(0xd8b4fe, 0.9);
+    sideLight.position.set(5, 3, -3);
+    scene.add(sideLight);
 
-    const neonGlow = new THREE.PointLight(0x7c3aed, 2.0, 5);
+    const neonGlow = new THREE.PointLight(0x7c3aed, 1.5, 5);
     neonGlow.position.set(0, -1.2, 0);
     scene.add(neonGlow);
 
@@ -241,7 +250,7 @@ export const LabCanvas: React.FC<LabCanvasProps> = ({
     // ── Lab Table ────────────────────────────────────────────────────────────
     const table = new THREE.Mesh(
       new THREE.BoxGeometry(10, 0.18, 6),
-      new THREE.MeshPhysicalMaterial({ color: 0x111827, roughness: 0.15, metalness: 0.05 })
+      new THREE.MeshPhysicalMaterial({ color: 0x334155, roughness: 0.2, metalness: 0.1 })
     );
     table.position.y = -1.7;
     table.receiveShadow = true;
@@ -259,13 +268,13 @@ export const LabCanvas: React.FC<LabCanvasProps> = ({
     mkEdge(0x7c3aed,  3);
     mkEdge(0x22d3ee, -3);
 
-    // Grid floor
-    const grid = new THREE.GridHelper(20, 30, 0x7c3aed, 0x1a2540);
+    // Grid floor — lighter
+    const grid = new THREE.GridHelper(20, 30, 0x7c3aed, 0x334155);
     grid.position.y = -2.5;
     scene.add(grid);
 
     // ── Back wall + neon strips ──────────────────────────────────────────────
-    const wallMat = new THREE.MeshPhysicalMaterial({ color: 0x0d1424, roughness: 0.9, metalness: 0.1 });
+    const wallMat = new THREE.MeshPhysicalMaterial({ color: 0x1e3a5f, roughness: 0.85, metalness: 0.05 });
     const wall = new THREE.Mesh(new THREE.PlaneGeometry(16, 9), wallMat);
     wall.position.z = -5;
     wall.receiveShadow = true;
@@ -275,7 +284,7 @@ export const LabCanvas: React.FC<LabCanvasProps> = ({
       const colors = [0x7c3aed, 0x22d3ee, 0x7c3aed, 0x22d3ee];
       const sm = new THREE.Mesh(
         new THREE.BoxGeometry(14, 0.025, 0.01),
-        new THREE.MeshBasicMaterial({ color: colors[i], transparent: true, opacity: 0.55 })
+        new THREE.MeshBasicMaterial({ color: colors[i], transparent: true, opacity: 0.7 })
       );
       sm.position.set(0, y * 2.2, -4.98);
       scene.add(sm);
@@ -624,7 +633,14 @@ export const LabCanvas: React.FC<LabCanvasProps> = ({
 
   // ── Custom Reaction ───────────────────────────────────────────────────────
   useEffect(() => {
-    if (!sceneRef.current || !customReaction) return;
+    if (!sceneRef.current) return;
+
+    // When customReaction is cleared (null) → reset the apparatus to empty
+    if (!customReaction) {
+      resetApparatus();
+      return;
+    }
+
     const radius = apparatusType === 'beaker' ? 0.85 : 0.32;
 
     triggerReaction(
