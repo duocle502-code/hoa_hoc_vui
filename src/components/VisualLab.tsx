@@ -234,35 +234,224 @@ export const VisualLab: React.FC<VisualLabProps> = ({ chemicals, isHeating = fal
       let presetEqs: PlacedEquipment[] = [];
       let logMsg = '';
       
-      // Calculate center coordinates
-      const baseX = (labAreaRef.current?.clientWidth || 800) / 2 - 100;
-      const baseY = (labAreaRef.current?.clientHeight || 400) / 2;
+      // Calculate layout anchor — left-center of lab area
+      const W = labAreaRef.current?.clientWidth || 800;
+      const H = labAreaRef.current?.clientHeight || 500;
+      // Anchor: bắt đầu từ 15% chiều rộng, giữa chiều cao
+      const left  = W * 0.12;
+      const mid   = H * 0.42;
 
       if (presetId === 'H2') {
-        logMsg = 'Đã tải bộ dụng cụ điều chế khí Hidro (Zn + HCl). Thử nhỏ HCl vào bình cầu!';
+        /**
+         * BỐ TRÍ CHUẨN — Điều chế H₂ (Zn + HCl loãng)
+         * Thứ tự từ trái sang phải:
+         *  1. Giá đỡ sắt (iron-stand)         — neo toàn bộ hệ thống
+         *  2. Bình cầu đáy tròn (round-flask) — chứa Zn, đặt trên kẹp giá
+         *  3. Phễu chiết (separatory-funnel)  — gắn qua nút cao su, bên trên bình cầu, chứa HCl
+         *  4. Ống dẫn khí chữ Z               — nối từ nút bình cầu sang phải/xuống
+         *  5. Chậu thủy tinh (trough)         — chứa nước, đặt bên phải
+         *  6. Ống nghiệm úp ngược (test-tube) — trong chậu nước, thu khí H₂ bằng cách dời nước
+         */
+        logMsg = 'Đã tải mẫu điều chế H₂: Zn + HCl loãng → ZnCl₂ + H₂↑. Mở khóa phễu chiết để cho HCl chảy xuống bình cầu.';
+        const standX        = left;           // giá đỡ sắt
+        const flaskX        = left + 18;      // bình cầu bên phải thanh đứng
+        const funnelX       = left + 20;      // phễu chiết căn thẳng với bình cầu
+        const funnelY       = mid - 190;      // phễu chiết ở trên bình cầu (~120px)
+        const flaskY        = mid - 60;       // bình cầu: giữa khung, kẹp tại thanh đứng
+        const tubeZX        = left + 85;      // ống dẫn khí chữ Z: ngay bên phải bình cầu
+        const tubeZY        = mid - 68;       // ngang miệng bình cầu
+        const troughX       = left + 210;     // chậu thủy tinh bên phải, thấp hơn
+        const troughY       = mid + 10;
+        const collectTubeX  = troughX + 70;   // ống nghiệm úp ngược trong chậu
+        const collectTubeY  = mid - 65;       // đỉnh ống nghiệm vào trong chậu
+
         presetEqs = [
-          { id: `iron-stand-${Date.now()}-1`, equipmentId: 'iron-stand', x: baseX - 80, y: baseY - 50, scale: 1, rotation: 0, chemicals: [], color: '#fff', bubbles: false, precipitate: false, message: '', isReacting: false },
-          { id: `round-flask-${Date.now()}-2`, equipmentId: 'round-flask', x: baseX - 45, y: baseY - 10, scale: 0.9, rotation: 0, chemicals: ['zn'], color: '#94a3b8', bubbles: false, precipitate: false, message: '', isReacting: false },
-          { id: `separatory-funnel-${Date.now()}-3`, equipmentId: 'separatory-funnel', x: baseX - 45, y: baseY - 120, scale: 0.8, rotation: 0, chemicals: [], color: '#fff', bubbles: false, precipitate: false, message: 'Nhỏ HCl vào đây', isReacting: false },
-          { id: `delivery-tube-z-${Date.now()}-4`, equipmentId: 'delivery-tube-z', x: baseX - 10, y: baseY - 40, scale: 1.2, rotation: 10, chemicals: [], color: '#fff', bubbles: false, precipitate: false, message: '', isReacting: false },
-          { id: `trough-${Date.now()}-5`, equipmentId: 'trough', x: baseX + 80, y: baseY + 30, scale: 1.2, rotation: 0, chemicals: ['h2o'], color: '#38bdf8', bubbles: false, precipitate: false, message: '', isReacting: false },
-          { id: `test-tube-${Date.now()}-6`, equipmentId: 'test-tube', x: baseX + 130, y: baseY - 20, scale: 1, rotation: 180, chemicals: [], color: '#fff', bubbles: true, precipitate: false, message: 'Thu khí dời nước', isReacting: false },
+          // 1. Giá đỡ sắt
+          {
+            id: `iron-stand-${Date.now()}-1`, equipmentId: 'iron-stand',
+            x: standX, y: mid - 155, scale: 1.1, rotation: 0,
+            chemicals: [], color: '#fff', bubbles: false, precipitate: false,
+            message: '', isReacting: false,
+          },
+          // 2. Bình cầu đáy tròn — chứa Zn (hạt), được kẹp vào giá
+          {
+            id: `round-flask-${Date.now()}-2`, equipmentId: 'round-flask',
+            x: flaskX, y: flaskY, scale: 1.0, rotation: 0,
+            chemicals: ['zn'], color: '#94a3b8',
+            bubbles: false, precipitate: false,
+            message: 'Hạt Zn', isReacting: false,
+          },
+          // 3. Phễu chiết — chứa HCl, đuôi cắm qua nút cao su xuống bình cầu
+          {
+            id: `separatory-funnel-${Date.now()}-3`, equipmentId: 'separatory-funnel',
+            x: funnelX, y: funnelY, scale: 0.95, rotation: 0,
+            chemicals: [], color: '#fff',
+            bubbles: false, precipitate: false,
+            message: 'Rót HCl vào đây', isReacting: false,
+          },
+          // 4. Ống dẫn khí chữ Z — đầu vào cắm nút bình cầu, đầu ra hướng sang chậu nước
+          {
+            id: `delivery-tube-z-${Date.now()}-4`, equipmentId: 'delivery-tube-z',
+            x: tubeZX, y: tubeZY, scale: 1.3, rotation: 0,
+            chemicals: [], color: '#fff',
+            bubbles: false, precipitate: false,
+            message: 'Dẫn khí H₂', isReacting: false,
+          },
+          // 5. Chậu thủy tinh — đầy nước, để thu khí bằng phương pháp dời nước
+          {
+            id: `trough-${Date.now()}-5`, equipmentId: 'trough',
+            x: troughX, y: troughY, scale: 1.25, rotation: 0,
+            chemicals: ['h2o'], color: '#38bdf8',
+            bubbles: false, precipitate: false,
+            message: '', isReacting: false,
+          },
+          // 6. Ống nghiệm úp ngược trong chậu nước — thu khí H₂ dời nước
+          // rotation: 180 = úp ngược miệng xuống
+          {
+            id: `test-tube-${Date.now()}-6`, equipmentId: 'test-tube',
+            x: collectTubeX, y: collectTubeY, scale: 1.05, rotation: 180,
+            chemicals: [], color: '#fff',
+            bubbles: false, precipitate: false,
+            message: 'Úp ngược — thu H₂', isReacting: false,
+          },
         ];
+
       } else if (presetId === 'O2') {
-        logMsg = 'Đã tải bộ dụng cụ nhiệt phân (KMnO4). Hãy bật đèn cồn ở dưới!';
+        /**
+         * BỐ TRÍ CHUẨN — Điều chế O₂ (Nhiệt phân KMnO₄)
+         * Thứ tự từ trái sang phải:
+         *  1. Giá đỡ sắt (iron-stand)         — kẹp ống nghiệm
+         *  2. Đèn cồn (alcohol-lamp)          — bên dưới ống nghiệm
+         *  3. Ống nghiệm (test-tube)          — chứa KMnO₄, nghiêng ~15° (đáy cao hơn miệng)
+         *  4. Bông gòn (cotton)               — nhét ở miệng ống nghiệm ngăn bột bay ra
+         *  5. Ống dẫn khí chữ L (delivery-tube-l) — nối từ miệng ống nghiệm sang chậu nước
+         *  6. Chậu thủy tinh (trough)         — chứa nước
+         *  7. Lọ/ống nghiệm úp ngược          — thu khí O₂ bằng cách dời nước
+         */
+        logMsg = 'Đã tải mẫu điều chế O₂: 2KMnO₄ →(đun) K₂MnO₄ + MnO₂ + O₂↑. Bật đèn cồn để đun ống nghiệm.';
+        const standX       = left;
+        const lampX        = left + 28;       // đèn cồn ngay dưới ống nghiệm
+        const lampY        = mid + 40;        // thấp hơn ống nghiệm
+        const tubeX        = left + 18;       // ống nghiệm kẹp trên giá
+        const tubeY        = mid - 100;       // đủ cao để bên dưới có đèn cồn
+        // Ống nghiêng: rotation=-15 → đáy bên trái hơi cao hơn miệng (đúng chuẩn: tránh nứt vỡ)
+        const cottonX      = left + 48;       // bông gòn ở miệng ống nghiệm (miệng bên phải)
+        const cottonY      = mid - 68;
+        const tubeLX       = left + 60;       // ống dẫn chữ L ngay sau miệng ống nghiệm
+        const tubeLY       = mid - 70;
+        const troughX      = left + 190;
+        const troughY      = mid + 15;
+        const collectX     = troughX + 65;
+        const collectY     = mid - 55;
+
         presetEqs = [
-          { id: `iron-stand-${Date.now()}-1`, equipmentId: 'iron-stand', x: baseX - 110, y: baseY - 30, scale: 1, rotation: 0, chemicals: [], color: '#fff', bubbles: false, precipitate: false, message: '', isReacting: false },
-          { id: `test-tube-${Date.now()}-2`, equipmentId: 'test-tube', x: baseX - 50, y: baseY - 50, scale: 1.2, rotation: 65, chemicals: ['kmno4'], color: '#a21caf', bubbles: false, precipitate: false, message: '', isReacting: false },
-          { id: `delivery-tube-z-${Date.now()}-4`, equipmentId: 'delivery-tube-z', x: baseX - 5, y: baseY, scale: 1.2, rotation: -10, chemicals: [], color: '#fff', bubbles: false, precipitate: false, message: '', isReacting: false },
-          { id: `trough-${Date.now()}-5`, equipmentId: 'trough', x: baseX + 80, y: baseY + 50, scale: 1.2, rotation: 0, chemicals: ['h2o'], color: '#38bdf8', bubbles: false, precipitate: false, message: '', isReacting: false },
-          { id: `test-tube-${Date.now()}-6`, equipmentId: 'test-tube', x: baseX + 130, y: baseY + 10, scale: 1, rotation: 180, chemicals: [], color: '#fff', bubbles: true, precipitate: false, message: 'Thu khí O2', isReacting: false },
+          // 1. Giá đỡ sắt
+          {
+            id: `iron-stand-${Date.now()}-1`, equipmentId: 'iron-stand',
+            x: standX, y: mid - 150, scale: 1.1, rotation: 0,
+            chemicals: [], color: '#fff', bubbles: false, precipitate: false,
+            message: '', isReacting: false,
+          },
+          // 2. Đèn cồn — bên dưới ống nghiệm
+          {
+            id: `alcohol-lamp-${Date.now()}-2`, equipmentId: 'alcohol-lamp',
+            x: lampX, y: lampY, scale: 0.9, rotation: 0,
+            chemicals: [], color: '#fff', bubbles: false, precipitate: false,
+            message: 'Đun nóng KMnO₄', isReacting: false,
+          },
+          // 3. Ống nghiệm — nghiêng -15° (đáy cao hơn miệng) — kẹp tại giá đỡ
+          {
+            id: `test-tube-stopper-${Date.now()}-3`, equipmentId: 'test-tube-stopper',
+            x: tubeX, y: tubeY, scale: 1.3, rotation: -15,
+            chemicals: ['kmno4'], color: '#a21caf',
+            bubbles: false, precipitate: false,
+            message: 'KMnO₄ — đáy cao hơn miệng', isReacting: false,
+          },
+          // 4. Bông gòn — ở miệng ống nghiệm (ngăn bột KMnO₄ theo khí ra)
+          {
+            id: `cotton-${Date.now()}-4`, equipmentId: 'cotton',
+            x: cottonX, y: cottonY, scale: 1.1, rotation: 0,
+            chemicals: [], color: '#fff', bubbles: false, precipitate: false,
+            message: 'Ngăn bột bay ra', isReacting: false,
+          },
+          // 5. Ống dẫn khí chữ L — nối miệng ống nghiệm sang chậu nước
+          {
+            id: `delivery-tube-l-${Date.now()}-5`, equipmentId: 'delivery-tube-l',
+            x: tubeLX, y: tubeLY, scale: 1.5, rotation: 0,
+            chemicals: [], color: '#fff', bubbles: false, precipitate: false,
+            message: 'Dẫn O₂ vào chậu', isReacting: false,
+          },
+          // 6. Chậu thủy tinh — đầy nước
+          {
+            id: `trough-${Date.now()}-6`, equipmentId: 'trough',
+            x: troughX, y: troughY, scale: 1.25, rotation: 0,
+            chemicals: ['h2o'], color: '#38bdf8',
+            bubbles: false, precipitate: false,
+            message: '', isReacting: false,
+          },
+          // 7. Ống nghiệm úp ngược trong chậu — thu khí O₂
+          {
+            id: `test-tube-${Date.now()}-7`, equipmentId: 'test-tube',
+            x: collectX, y: collectY, scale: 1.1, rotation: 180,
+            chemicals: [], color: '#fff',
+            bubbles: false, precipitate: false,
+            message: 'Úp ngược — thu O₂', isReacting: false,
+          },
         ];
+
       } else if (presetId === 'CO2') {
-        logMsg = 'Đã tải bộ sục khí CO2. Nhỏ HCl vào Erlenmeyer (Bình tam giác)!';
+        /**
+         * BỐ TRÍ CHUẨN — Điều chế CO₂ và nhận biết (Na₂CO₃ hoặc CaCO₃ + HCl)
+         * Thứ tự từ trái sang phải:
+         *  1. Phễu chiết (separatory-funnel)  — chứa HCl loãng, đặt phía trên bình tam giác
+         *  2. Bình tam giác (erlenmeyer)       — chứa Na₂CO₃ (hoặc đá vôi CaCO₃)
+         *  3. Ống dẫn khí chữ L               — dẫn CO₂ từ bình sang cốc nước vôi
+         *  4. Cốc thủy tinh (beaker)          — chứa Ca(OH)₂ (nước vôi trong) để nhận biết CO₂
+         *     (CO₂ + Ca(OH)₂ → CaCO₃↓ trắng + H₂O)
+         */
+        logMsg = 'Đã tải mẫu sục CO₂: Na₂CO₃ + 2HCl → 2NaCl + H₂O + CO₂↑; CO₂ + Ca(OH)₂ → CaCO₃↓ + H₂O. Mở phễu chiết cho HCl nhỏ giọt vào bình tam giác.';
+        const funnelX   = left + 10;
+        const funnelY   = mid - 200;
+        const erlX      = left + 15;
+        const erlY      = mid - 50;
+        const tubeLX    = left + 100;
+        const tubeLY    = mid - 60;
+        const beakerX   = left + 220;
+        const beakerY   = mid - 40;
+
         presetEqs = [
-          { id: `erlenmeyer-${Date.now()}-1`, equipmentId: 'erlenmeyer', x: baseX - 50, y: baseY + 30, scale: 1, rotation: 0, chemicals: ['na2co3'], color: '#f8fafc', bubbles: false, precipitate: false, message: '', isReacting: false },
-          { id: `delivery-tube-l-${Date.now()}-2`, equipmentId: 'delivery-tube-l', x: baseX - 20, y: baseY - 5, scale: 1.3, rotation: 35, chemicals: [], color: '#fff', bubbles: false, precipitate: false, message: '', isReacting: false },
-          { id: `beaker-${Date.now()}-3`, equipmentId: 'beaker', x: baseX + 60, y: baseY + 50, scale: 0.9, rotation: 0, chemicals: ['caoh2'], color: '#ffffff', bubbles: false, precipitate: false, message: 'Nước vôi trong', isReacting: false },
+          // 1. Phễu chiết — chứa HCl, đuôi cắm qua nút vào bình tam giác
+          {
+            id: `separatory-funnel-${Date.now()}-1`, equipmentId: 'separatory-funnel',
+            x: funnelX, y: funnelY, scale: 1.0, rotation: 0,
+            chemicals: [], color: '#fff',
+            bubbles: false, precipitate: false,
+            message: 'Rót HCl vào đây', isReacting: false,
+          },
+          // 2. Bình tam giác (Erlenmeyer) — chứa Na₂CO₃
+          {
+            id: `erlenmeyer-${Date.now()}-2`, equipmentId: 'erlenmeyer',
+            x: erlX, y: erlY, scale: 1.1, rotation: 0,
+            chemicals: ['na2co3'], color: '#f1f5f9',
+            bubbles: false, precipitate: false,
+            message: 'Na₂CO₃', isReacting: false,
+          },
+          // 3. Ống dẫn khí chữ L — nối bình tam giác sang cốc nước vôi
+          {
+            id: `delivery-tube-l-${Date.now()}-3`, equipmentId: 'delivery-tube-l',
+            x: tubeLX, y: tubeLY, scale: 1.4, rotation: 0,
+            chemicals: [], color: '#fff',
+            bubbles: false, precipitate: false,
+            message: 'Dẫn CO₂', isReacting: false,
+          },
+          // 4. Cốc thủy tinh — chứa Ca(OH)₂ (nước vôi trong)
+          {
+            id: `beaker-${Date.now()}-4`, equipmentId: 'beaker',
+            x: beakerX, y: beakerY, scale: 1.1, rotation: 0,
+            chemicals: ['caoh2'], color: '#f8fafc',
+            bubbles: false, precipitate: false,
+            message: 'Nước vôi trong Ca(OH)₂', isReacting: false,
+          },
         ];
       }
 
